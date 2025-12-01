@@ -1,0 +1,9 @@
+[submodule "3rdparty/flashinfer"]
+	path = 3rdparty/flashinfer
+	url = https://github.com/happierpig/flashinfer-ai.git
+[submodule "3rdparty/raft"]
+	path = 3rdparty/raft
+	url = https://github.com/rapidsai/raft.git
+[submodule "3rdparty/vllm"]
+	path = 3rdparty/vllm
+	url = https://github.com/shadowpa0327/vllm.git

@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "specgen"
+version = "0.0.1"
+
+dependencies = [
+    "datasets==3.0.1",
+    "word2number",
+    "latex2sympy2",
+    "scipy",
+    "pre-commit",
+    "wandb",
+    "numba",
+    "tabulate",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["scripts"]

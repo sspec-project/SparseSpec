@@ -1,0 +1,15 @@
+antlr4-python3-runtime==4.11.1 # ! The version needs to be compatible with sympy.
+datasets
+flash_attn
+Pebble
+python_dateutil
+
+# math_eval
+sympy==1.12
+timeout-decorator
+torch
+tqdm
+transformers
+# common
+# vllm is installed from the vendored fork in 3rdparty/vllm
+word2number
