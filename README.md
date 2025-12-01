@@ -1,12 +1,12 @@
-# SpecGen
+# SparseSpec
 > This repo is the proof-of-concept of our research project, which is not yet ready for production use.
 > We plan to upstream a subset of features to vLLM in the future.
 
-SpecGen is a *training-free* and *lossless* acceleration framework for batch inference of reasoning large language models (RLMs), powered by *sparse self-speculative decoding*.
-By co-designing dynamic sparse attention with the speculative decoding, SpecGen achieves up to $2.3\times$ throughput gain on popular workloads such as RL rollout and batch inference over AIME, LivecodeBench, and OlympiadBench.
+SparseSpec is a *training-free* and *lossless* acceleration framework for batch inference of reasoning large language models (RLMs), powered by *sparse self-speculative decoding*.
+By co-designing dynamic sparse attention with the speculative decoding, SparseSpec achieves up to $2.3\times$ throughput gain on popular workloads such as RL rollout and batch inference over AIME, LivecodeBench, and OlympiadBench.
 
 <p align="center" width="70%">
-  <img src="./assets/figures/fig_teaser.png" alt="SpecGen Overview" width="70%">
+  <img src="./assets/figures/fig_teaser.png" alt="SparseSpec Overview" width="70%">
 </p>
 
 ## Supported Features
@@ -24,8 +24,8 @@ By co-designing dynamic sparse attention with the speculative decoding, SpecGen 
 Dynamic sparse attention tailored for speculative decoding
 </span></summary>
 
-Motivated by the observation that *memory-bound decode attention* is the dominant bottleneck in RLMs inference, SpecGen uses sparse attention as *draft model* followed by a full attention as *target model*, which dramtically reduces the memory loading thus boosts the throughput (consider check [H2O](https://arxiv.org/abs/2306.14048) and [Quest](https://arxiv.org/abs/2406.10774) if not familiar with sparse attention).
-Thus, an accurate and efficient sparse attention mechanism is crucial for SpecGen.
+Motivated by the observation that *memory-bound decode attention* is the dominant bottleneck in RLMs inference, SparseSpec uses sparse attention as *draft model* followed by a full attention as *target model*, which dramtically reduces the memory loading thus boosts the throughput (consider check [H2O](https://arxiv.org/abs/2306.14048) and [Quest](https://arxiv.org/abs/2406.10774) if not familiar with sparse attention).
+Thus, an accurate and efficient sparse attention mechanism is crucial for SparseSpec.
 
 
 <p align="center" width="70%">
@@ -33,9 +33,9 @@ Thus, an accurate and efficient sparse attention mechanism is crucial for SpecGe
 </p>
 
 
-To improve accuracy, SpecGen introduces PillarAttn, which periodically updates the sparsity patterns (i.e., crucial tokens), to adapt to the *context dynamics* of the RLMs' long-generation paradigm.
-To avoid additional storage overhead (e.g., storing KV-Cache metadata) and computational overhead, SpecGen co-designs the identification of sparsity patterns with the speculative decoding.
-Specifically, SpecGen leverages the intermidates results of the full attention from verification phase (i.e., every $k$ draft phases), to obtain the crucial tokens with Top-K attention scores.
+To improve accuracy, SparseSpec introduces PillarAttn, which periodically updates the sparsity patterns (i.e., crucial tokens), to adapt to the *context dynamics* of the RLMs' long-generation paradigm.
+To avoid additional storage overhead (e.g., storing KV-Cache metadata) and computational overhead, SparseSpec co-designs the identification of sparsity patterns with the speculative decoding.
+Specifically, SparseSpec leverages the intermidates results of the full attention from verification phase (i.e., every $k$ draft phases), to obtain the crucial tokens with Top-K attention scores.
 We visualize this process in the figure above.
 
 
@@ -58,12 +58,12 @@ Such heterogenity leads to resource usage fluctuation if both phases are schedul
   <img src="./assets/figures/fig_unified.png" alt="Unified Batch Scheduler" width="65%">
 </p>
 
-To mitigate this issue, SpecGen introduces a *unified batch scheduler* to collocate draft and verify requests within a batch, and balance the resource usages across iterations.
+To mitigate this issue, SparseSpec introduces a *unified batch scheduler* to collocate draft and verify requests within a batch, and balance the resource usages across iterations.
 This is feasible as the sparse and full attention essentially share the same control and data flow, except for the sparse loading over KV-Cache, which can be easily manipulated by the PageAttention.
 Check `serve/scheduler/spec_scheduler.py L68` for detailed implementation.
 
 #### Fused draft and verify attention
-To increase bandwidth utilization, SpecGen introduces a customized attention kernel that automatically dispatches tiles from draft and verify to the best kernel configuration via a persistent kernel style.
+To increase bandwidth utilization, SparseSpec introduces a customized attention kernel that automatically dispatches tiles from draft and verify to the best kernel configuration via a persistent kernel style.
 Such a fused prefill/decode attention also benefit the CUDA graph capture since a single graph can cover different combination of prefill and decode configurations.
 We upstreamed this kernel to FlashInfer in [#1137](https://github.com/flashinfer-ai/flashinfer/pull/1137) and [#1200](https://github.com/flashinfer-ai/flashinfer/pull/1200).
 
@@ -80,7 +80,7 @@ Delayed verification enabling asynchronous CPU/GPU
 
 In standard speculative decoding, each draft depends on the previous verification step to evict rejected tokens and update token-ID metadata.
 Because of this dependency, the next draft iteration cannot begin until the host finishes verification, leaving the GPU idle.
-SpecGen resolves this by extracting verification requests from the batch and deferring them to the next iteration, allowing the remaining requests to proceed without waiting.
+SparseSpec resolves this by extracting verification requests from the batch and deferring them to the next iteration, allowing the remaining requests to proceed without waiting.
 The overall workflow is illustrated in the figure below.
 
 <p align="center" width="60%">
@@ -91,7 +91,7 @@ The overall workflow is illustrated in the figure below.
 
 CUDA graphs require fixed workspace buffers, which prevents concurrently reusing the same buffer across consecutive iterations to avoid race condition.
 This create a synchronization bubble to wait for the previous graph to finish.
-SpecGen eliminates this gap with a double-buffered CUDA graph scheme:
+SparseSpec eliminates this gap with a double-buffered CUDA graph scheme:
 it maintains two identical graphs, each backed by its own workspace, allowing one graph to run while the other is being prepared.
 This is practical because the fused attention kernel significantly reduces the number of CUDA graphs, keeping memory usage manageable.
 An nsys profile is shown below:
@@ -110,7 +110,7 @@ Chunk-wise and asynchronous CPU KV-Cache offloading
 
 #### Chunk-wise and asynchronous offloading
 
-To keep offloading off the critical path, SpecGen performs KV-Cache offloading asynchronously in a separate CUDA stream. Since each iteration only produces a bounded number of tokens (limited by the GEMM batch size), the amount of data needing offload per step is also bounded. This makes chunk-wise offloading feasible, and SpecGen implements it with a simple PyTorch API, shown below.
+To keep offloading off the critical path, SparseSpec performs KV-Cache offloading asynchronously in a separate CUDA stream. Since each iteration only produces a bounded number of tokens (limited by the GEMM batch size), the amount of data needing offload per step is also bounded. This makes chunk-wise offloading feasible, and SparseSpec implements it with a simple PyTorch API, shown below.
 ```python
 def offload(self, idx_gpu, idx_cpu):
     self._physical_mem_cpu[idx_cpu[0] : idx_cpu[-1] + 1, ...].copy_(
@@ -127,9 +127,9 @@ def restore(self, idx_cpu, idx_gpu):
 
 #### Physical and logical page indices conversion
 
-SpecGen also offloads the page indices that encode the sparsity pattern of draft attention.
+SparseSpec also offloads the page indices that encode the sparsity pattern of draft attention.
 Because physical device pages are freed and reassigned after offloading, these indices must be converted into logical (virtual) indices that remain consistent across the sequence.
-SpecGen performs this conversion incrementally using binary search, amortizing the cost across chunks.
+SparseSpec performs this conversion incrementally using binary search, amortizing the cost across chunks.
 The detailed implementation can be found in `serve/request/kv_cache_ptr/base.py L17`.
 
 <p align="center" width="65%">
@@ -140,7 +140,7 @@ The detailed implementation can be found in `serve/request/kv_cache_ptr/base.py 
 
 ## File Structure
 ```
-SpecGen
+SparseSpec
 ├── 3rdparty             # dependencies libraries
 ├── assets               # figures in README.md
 ├── eval                 # accuracy evaluation suite
@@ -161,8 +161,8 @@ SpecGen
 ## Installation
 ### Create conda environment (optional)
 ```
-conda create -n specgen python=3.12 -y
-conda activate specgen
+conda create -n SparseSpec python=3.12 -y
+conda activate SparseSpec
 conda install cmake -y
 ```
 
@@ -185,7 +185,7 @@ cd $dir/3rdparty/vllm
 export VLLM_USE_PRECOMPILED=1
 pip install -e .
 
-# install specgen-python package
+# install SparseSpec-python package
 cd $dir
 pip install -e .
 
@@ -207,7 +207,7 @@ Once installed, all kernels (including Top-K and attention score rematerializati
 We test and evaluate our framework on NVIDIA H100-SXM5 GPUs. CUDA and PyTorch versions do not have strict requirements, while we use CUDA 12.9 and PyTorch 2.8.0.
 
 ### Examples and profile scripts
-We provide demonstration examples in `scripts/example_single.sh` for running SpecGen with different configurations.
+We provide demonstration examples in `scripts/example_single.sh` for running SparseSpec with different configurations.
 We provide a nsys profile results for demonstration in `assets/traces/pillar_stride8_my_profile.nsys-rep`. For profiling, to enable nsys profile, please cancel the comment of `${NSYS_CMD[@]}` in scripts:
 ```bash
 nsys profile --cuda-graph-trace node --trace=cuda,nvtx,osrt ...
@@ -229,17 +229,17 @@ self.prof = Profiler(
 After completing the installation steps above, you can reproduce all reported results with the following scripts.
 All scripts evaluate **Qwen3-1.7B / 8B / 14B** on the same 3 math / coding datasets (`aime24`, `livecodebench`, `olympiadbench`).
 
-- **SpecGen (ours)** – sparse self-speculative decoding engine  
+- **SparseSpec (ours)** – sparse self-speculative decoding engine  
   ```bash
-  bash scripts/eval_specgen.sh
+  bash scripts/eval_SparseSpec.sh
   ```  
-  Uses SpecGen with `kv_cache=pillar`, delayed verification and unified scheduler; outputs are written under `eval/benchmarks/outputs/specgen/`.
+  Uses SparseSpec with `kv_cache=pillar`, delayed verification and unified scheduler; outputs are written under `eval/benchmarks/outputs/SparseSpec/`.
 
 - **vLLM greedy baseline** – standard full KV-cache decoding  
   ```bash
   bash scripts/eval_vllm.sh
   ```  
-  Runs vLLM without speculation, matching SpecGen’s prompts (`qwen3-math-thinking`) and temperatures; outputs go to `eval/benchmarks/outputs/vllm/`.
+  Runs vLLM without speculation, matching SparseSpec’s prompts (`qwen3-math-thinking`) and temperatures; outputs go to `eval/benchmarks/outputs/vllm/`.
 
 - **vLLM + n-gram speculation baseline**  
   ```bash
@@ -275,7 +275,7 @@ conda install cmake==3.30.4 -y
 cmake --version
 
 # If the version is still not 3.30.4, please update PATH to override the cmake path
-export PATH=<PATH_TO_CONDA>/envs/specgen/bin:$PATH
+export PATH=<PATH_TO_CONDA>/envs/SparseSpec/bin:$PATH
 ```
 
 ### Update GCC
@@ -288,7 +288,7 @@ find / -name "libstdc++.so.6" 2>/dev/null
 # If no such lib, please update your GCC version
 strings <PATH_TO_libstdc++.so.6> | grep GLIBCXX_3.4.30
 # Symbolic link to the correct libstdc++.so.6
-ln -s <PATH_TO_OK_libstdc++.so.6> <PATH_TO_CONDA>/envs/specgen/lib/libstdc++.so.6
+ln -s <PATH_TO_OK_libstdc++.so.6> <PATH_TO_CONDA>/envs/SparseSpec/lib/libstdc++.so.6
 ```
 <!--
 ### Optional
