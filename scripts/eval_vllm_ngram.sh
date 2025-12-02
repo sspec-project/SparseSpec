@@ -98,7 +98,3 @@ for model in "${MODELS[@]}"; do
       --vllm_ngram_prompt_lookup_max "${VLLM_NGRAM_PROMPT_LOOKUP_MAX}"
   done
 done
-
-
-
-

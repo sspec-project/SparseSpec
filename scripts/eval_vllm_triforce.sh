@@ -110,6 +110,3 @@ for model in "${MODELS[@]}"; do
       --repeat_dataset "${REPEAT_DATASET}"
   done
 done
-
-
-

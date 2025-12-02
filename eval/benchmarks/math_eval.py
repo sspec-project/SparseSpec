@@ -65,7 +65,9 @@ def parse_args():
     parser.add_argument("--max_tokens_per_call", default=None, type=int)
     parser.add_argument("--shuffle", action="store_true")
     parser.add_argument("--use_vllm", action="store_true")
-    parser.add_argument("--use_specgen", action="store_true", help="Use specgen inference")
+    parser.add_argument(
+        "--use_specgen", action="store_true", help="Use specgen inference"
+    )
     parser.add_argument("--save_outputs", action="store_true")
     parser.add_argument("--overwrite", action="store_true")
     parser.add_argument("--use_safetensors", action="store_true")
@@ -668,7 +670,25 @@ def setup(args):
                 vllm_kwargs["gpu_memory_utilization"] = args.vllm_gpu_memory_utilization
                 vllm_kwargs["max_num_batched_tokens"] = 2048
                 vllm_kwargs["max_num_seqs"] = args.vllm_max_num_seqs
-                vllm_kwargs["cuda_graph_sizes"] = [1, 2, 4, 8, 16, 32, 64, 128, 192, 256, 320, 384, 448, 512, 768, 1024, 1536]
+                vllm_kwargs["cuda_graph_sizes"] = [
+                    1,
+                    2,
+                    4,
+                    8,
+                    16,
+                    32,
+                    64,
+                    128,
+                    192,
+                    256,
+                    320,
+                    384,
+                    448,
+                    512,
+                    768,
+                    1024,
+                    1536,
+                ]
 
                 print(f"Enabled vLLM self-speculative decoding with config:")
                 print(f"  - Method: self_specs")
@@ -719,7 +739,25 @@ def setup(args):
                 vllm_kwargs["gpu_memory_utilization"] = args.vllm_gpu_memory_utilization
                 vllm_kwargs["max_num_batched_tokens"] = 2048
                 vllm_kwargs["max_num_seqs"] = args.vllm_max_num_seqs
-                vllm_kwargs["cuda_graph_sizes"] = [1, 2, 4, 8, 16, 32, 64, 128, 192, 256, 320, 384, 448, 512, 768, 1024, 1536]
+                vllm_kwargs["cuda_graph_sizes"] = [
+                    1,
+                    2,
+                    4,
+                    8,
+                    16,
+                    32,
+                    64,
+                    128,
+                    192,
+                    256,
+                    320,
+                    384,
+                    448,
+                    512,
+                    768,
+                    1024,
+                    1536,
+                ]
 
                 print(f"Enabled vLLM self-spec with n-gram assistance:")
                 print(f"  - Method: self_spec_ngram")
@@ -736,9 +774,7 @@ def setup(args):
                 print(
                     f"  - Recent ratio (streaming cache): {args.vllm_sspec_ngram_recent_ratio} ({args.vllm_sspec_ngram_recent_ratio*100:.1f}%)"
                 )
-                print(
-                    f"  - Block size: {args.vllm_sspec_ngram_block_size}"
-                )
+                print(f"  - Block size: {args.vllm_sspec_ngram_block_size}")
                 print(f"Enabled vLLM stat logging for metrics collection")
 
             llm = LLM(**vllm_kwargs)
@@ -1020,7 +1056,9 @@ def main(llm, tokenizer, data_name, args):
             # Automatically adjust admit_policy if using sparse kv_cache (mirror serve/run.py)
             specgen_admit_policy = args.specgen_admit_policy
             if args.specgen_kv_cache != "full" and specgen_admit_policy == "naive":
-                specgen_admit_policy = "offloading"  # Use offloading as default for non-full kv_cache
+                specgen_admit_policy = (
+                    "offloading"  # Use offloading as default for non-full kv_cache
+                )
                 print(
                     "Warning: specgen_admit_policy 'naive' is not compatible with non-full kv_cache. "
                     "Using 'offloading' instead."
@@ -1157,7 +1195,9 @@ def main(llm, tokenizer, data_name, args):
                         print(
                             f"Original generated was: {repr(original_generated[:500])}"
                         )
-                elif len(generated_text.strip()) < 10 and args.specgen_verbose and i == 0:
+                elif (
+                    len(generated_text.strip()) < 10 and args.specgen_verbose and i == 0
+                ):
                     print(
                         f"Warning - Generated text is very short: {repr(generated_text)}"
                     )
@@ -1383,9 +1423,7 @@ def main(llm, tokenizer, data_name, args):
             "elapsed_seconds": time_use,
             "engine_seconds": engine_time_s,
             "engine": (
-                "vllm"
-                if args.use_vllm
-                else ("specgen" if args.use_specgen else "hf")
+                "vllm" if args.use_vllm else ("specgen" if args.use_specgen else "hf")
             ),
         }
 

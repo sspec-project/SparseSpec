@@ -104,7 +104,3 @@ for idx in "${!MODELS[@]}"; do
       --vllm_gpu_memory_utilization "${VLLM_GPU_MEMORY_UTILIZATION}"
   done
 done
-
-
-
-

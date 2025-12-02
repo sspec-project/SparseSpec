@@ -94,7 +94,3 @@ for model in "${MODELS[@]}"; do
       --overwrite
   done
 done
-
-
-
-

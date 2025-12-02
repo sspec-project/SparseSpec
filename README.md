@@ -229,40 +229,40 @@ self.prof = Profiler(
 After completing the installation steps above, you can reproduce all reported results with the following scripts.
 All scripts evaluate **Qwen3-1.7B / 8B / 14B** on the same 3 math / coding datasets (`aime24`, `livecodebench`, `olympiadbench`).
 
-- **SparseSpec (ours)** – sparse self-speculative decoding engine  
+- **SparseSpec (ours)** – sparse self-speculative decoding engine
   ```bash
   bash scripts/eval_SparseSpec.sh
-  ```  
+  ```
   Uses SparseSpec with `kv_cache=pillar`, delayed verification and unified scheduler; outputs are written under `eval/benchmarks/outputs/SparseSpec/`.
 
-- **vLLM greedy baseline** – standard full KV-cache decoding  
+- **vLLM greedy baseline** – standard full KV-cache decoding
   ```bash
   bash scripts/eval_vllm.sh
-  ```  
+  ```
   Runs vLLM without speculation, matching SparseSpec’s prompts (`qwen3-math-thinking`) and temperatures; outputs go to `eval/benchmarks/outputs/vllm/`.
 
-- **vLLM + n-gram speculation baseline**  
+- **vLLM + n-gram speculation baseline**
   ```bash
   bash scripts/eval_vllm_ngram.sh
-  ```  
+  ```
   Enables vLLM’s built-in n-gram speculative decoding on the same 3×3 (models×datasets); outputs go to `eval/benchmarks/outputs/vllm_ngram/`.
 
-- **vLLM + EAGLE3 speculation baseline**  
+- **vLLM + EAGLE3 speculation baseline**
   ```bash
   bash scripts/eval_vllm_eagle3.sh
-  ```  
+  ```
   Uses vLLM’s EAGLE3 draft models (configured via `DRAFT_MODELS` in the script) on the same 3×3 grid; outputs go to `eval/benchmarks/outputs/vllm_eagle3/`.
 
-- **vLLM MagicDec-style baseline**  
+- **vLLM MagicDec-style baseline**
   ```bash
   bash scripts/eval_vllm_magicdec.sh
-  ```  
+  ```
   Enables vLLM V1 self-speculative decoding (`self_specs`) with a configuration aligned with MagicDec; outputs go to `eval/benchmarks/outputs/vllm_magicdec/`.
 
-- **vLLM TriForce-style baseline**  
+- **vLLM TriForce-style baseline**
   ```bash
   bash scripts/eval_vllm_triforce.sh
-  ```  
+  ```
   Runs vLLM V1 self-spec with n-gram assistance (`self_spec_ngram`) using the same 3×3 evaluation grid; outputs go to `eval/benchmarks/outputs/vllm_triforce_ngram/`.
 
 ## Troubleshooting
@@ -310,13 +310,13 @@ We thank the authors for their great works.
 ## Citation
 If you use this codebase, or otherwise found our work valuable, please cite:
 ```bibtex
-@misc{xiao2025optimizingmixtureblockattention,
-      title={Optimizing Mixture of Block Attention},
-      author={Guangxuan Xiao and Junxian Guo and Kasra Mazaheri and Song Han},
+@misc{zhao2025acceleratinglargescalereasoningmodel,
+      title={Accelerating Large-Scale Reasoning Model Inference with Sparse Self-Speculative Decoding},
+      author={Yilong Zhao and Jiaming Tang and Kan Zhu and Zihao Ye and Chi-Chih Chang and Chaofan Lin and Jongseok Park and Guangxuan Xiao and Mohamed S. Abdelfattah and Mingyu Gao and Baris Kasikci and Song Han and Ion Stoica},
       year={2025},
-      eprint={2511.11571},
+      eprint={2512.01278},
       archivePrefix={arXiv},
       primaryClass={cs.LG},
-      url={https://arxiv.org/abs/2511.11571},
+      url={https://arxiv.org/abs/2512.01278},
 }
 ```
